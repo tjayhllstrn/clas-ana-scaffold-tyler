@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'optparse'
+require 'fileutils'
 
 options = {
   max_events: 100
@@ -20,7 +21,8 @@ parser = OptionParser.new do |opts|
     options[:outdir] = d
   end
 
-  opts.on("-n N", "--max-events=N", Integer, "Max events (default #{options[:max_events]}, use <0 for all)") do |n|
+  opts.on("-n N", "--max-events=N", Integer,
+          "Max events (default #{options[:max_events]}, use -1 for all)") do |n|
     options[:max_events] = n
   end
 
@@ -54,13 +56,21 @@ unless File.exist?(options[:input])
   exit 1
 end
 
+# --- ensure output directory exists or offer to create it ---
 unless Dir.exist?(options[:outdir])
-  STDERR.puts "Error: output directory '#{options[:outdir]}' not found."
-  exit 1
+  print "Output directory '#{options[:outdir]}' does not exist. Create it? [y/N]: "
+  ans = STDIN.gets.chomp.downcase
+  if ans == 'y' || ans == 'yes'
+    FileUtils.mkdir_p(options[:outdir])
+    puts "Created directory #{options[:outdir]}"
+  else
+    abort("Aborted: output directory not found.")
+  end
 end
 
-base = File.basename(options[:input], File.extname(options[:input]))
-out = File.join(options[:outdir], "#{base}.root")
+# --- decide overwrite vs append if the output file already exists ---
+base  = File.basename(options[:input], File.extname(options[:input]))
+out   = File.join(options[:outdir], "#{base}.root")
 maxev = options[:max_events]
 
 cmd = %Q[root -l -b -q "macros/hipo2tree_pi0.C(\\"#{options[:input]}\\",\\"#{out}\\",#{maxev})"]
