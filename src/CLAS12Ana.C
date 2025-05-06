@@ -38,9 +38,9 @@ void CLAS12Ana::get_event_info(const std::unique_ptr<clas12::clas12reader>& _c12
         event_info.target = get_RGC_target(event_info.run);
     }
 
-     init_electron.SetPxPyPzE(0,0,sqrt(beamE*beamE-Me*Me),beamE);
-     target.SetPxPyPzE(0,0,0,Mp);
      _electron_beam_energy = runBeamEnergy(event_info.run);
+     init_electron.SetPxPyPzE(0,0,sqrt(_electron_beam_energy*_electron_beam_energy-Me*Me),_electron_beam_energy);
+     target.SetPxPyPzE(0,0,0,Mp);
      s = init_electron.M2()+target.M2()+2*target.M()*_electron_beam_energy;
     
 }

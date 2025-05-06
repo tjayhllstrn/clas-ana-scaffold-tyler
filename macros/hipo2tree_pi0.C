@@ -1,19 +1,10 @@
-#include "../../clas12_dihadrons/src/CutManager.C"
-#include "../../clas12_dihadrons/src/CLAS12Ana.C"
-#include "../../clas12_dihadrons/src/TreeManager.C"
-#include "../../clas12_dihadrons/src/HipoBankInterface.C"
-#include "../../clas12_dihadrons/src/Constants.h"
-#include "../../clas12_dihadrons/src/Structs.h"
-#include "../../clas12_dihadrons/src/Kinematics.C"
-#include "../../clas12_dihadrons/src/ParseBinYAML.C"
-#include "../../clas12_dihadrons/src/ParseText.C"
-
-#include <TFile.h>
-#include <TTree.h>
-#include <TVector3.h>
-#include <vector>
-#include <iostream>
-#include <string>
+#include "../src/CutManager.C"
+#include "../src/CLAS12Ana.C"
+#include "../src/TreeManager.C"
+#include "../src/HipoBankInterface.C"
+#include "../src/Constants.h"
+#include "../src/Structs.h"
+#include "../src/Kinematics.C"
 
 int hipo2tree_pi0(
     const char* hipoFile = "",
@@ -83,7 +74,6 @@ int hipo2tree_pi0(
         // Set run specific information
         // -------------------------------------
         _cm.set_run(event_info.run);
-        _cm.set_run_period(std::string(hipoFile));
         // if (doQADB == true) {
         //     if (!_c12->db()->qa()->isOkForAsymmetry(event_info.run, event_info.evnum)) {
         //         badAsym++;

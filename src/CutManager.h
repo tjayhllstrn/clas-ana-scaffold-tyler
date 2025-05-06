@@ -6,7 +6,8 @@ enum RUN_PERIOD {
     RGA,
     RGB,
     RGC,
-    RGK
+    RGK,
+    MC
 };
 
 class CutManager{
@@ -16,7 +17,7 @@ class CutManager{
   CutManager(int); // Run Number
   // Public member variables and functions
   void set_run(int);
-  void set_run_period(std::string);
+  void set_run_period();
   RUN_PERIOD get_run_period();
   std::vector<part> filter_particles(std::vector<part>);
     
@@ -50,4 +51,5 @@ class CutManager{
   RUN_PERIOD _run_period=RGA;
         
 };
+
 #endif

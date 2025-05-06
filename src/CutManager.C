@@ -1,6 +1,6 @@
 #include "CutManager.h"
 #include "Structs.h"
-
+#include "Constants.h"
 // Constructors
 CutManager::CutManager(){
   _run = 0;
@@ -19,17 +19,39 @@ void CutManager::set_run(int run){
   _run=run;
   _torusBending=runTorusBending(run);
   _is_MC=(abs(_run)==11);
+  set_run_period();
 }
 
-void CutManager::set_run_period(std::string infile){
-    if(infile.find("/rg-a/") != std::string::npos) _run_period = RGA;
-    else if(infile.find("/rg-b/") != std::string::npos) _run_period = RGB;
-    else if(infile.find("/rg-c/") != std::string::npos || infile.find("10.5GeV") != std::string::npos) _run_period = RGC;
-    else if(infile.find("/osg_out/") != std::string::npos) _run_period = RGA;
-    else if(infile.find("/rg-k/") != std::string::npos) _run_period = RGK;
+void CutManager::set_run_period() {
+    if ((_run >=   5032 && _run <=  5332) ||  // Fall2018_RGA_inbending
+        (_run >=   5333 && _run <=  5666) ||  // Fall2018_RGA_outbending
+        (_run >=   6616 && _run <=  6783))    // Spring2019_RGA_inbending
+    {
+        _run_period = RGA;
+    }
+    else if ((_run >=   6156 && _run <=  6603) ||  // Spring2019_RGB_inbending
+             (_run >=  11093 && _run <= 11283) ||  // Fall2019_RGB_outbending
+             (_run >=  11284 && _run <= 11300) ||  // Fall2019_RGB_BAND_inbending
+             (_run >=  11323 && _run <= 11571))    // Spring2020_RGB_inbending
+    {
+        _run_period = RGB;
+    }
+    else if ((_run >=  16089 && _run <= 16772) ||  // Summer2022_RGC
+             (_run >=  16843 && _run <= 17408))    // Fall2022_RGC
+    {
+        _run_period = RGC;
+    }
+    else if (_run ==  11   ||  // MC_RGA_outbending
+             _run == -11   ||  // MC_RGA_inbending
+             _run ==  22   ||  // MC_RGB_outbending
+             _run == -22)      // MC_RGB_inbending
+    {
+        _run_period = MC;
+    }
     else {
-        cout << "Unknown run period from input_file="<<infile<<"...defaulting to RGA"<<endl;
-        _run_period=RGA;
+        std::cout << "Unknown run period from run " << _run
+                  << "... defaulting to RGA" << std::endl;
+        _run_period = RGA;
     }
 }
 

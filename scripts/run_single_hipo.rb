@@ -73,6 +73,7 @@ base  = File.basename(options[:input], File.extname(options[:input]))
 out   = File.join(options[:outdir], "#{base}.root")
 maxev = options[:max_events]
 
-cmd = %Q[root -l -b -q "macros/hipo2tree_pi0.C(\\"#{options[:input]}\\",\\"#{out}\\",#{maxev})"]
+
+cmd = %Q[clas12root -l -b -q "macros/hipo2tree_pi0.C(\\"#{options[:input]}\\",\\"#{out}\\",#{maxev})"]
 puts "Running: #{cmd}"
 system(cmd) or abort("Failed to run hipo2tree_pi0.C")
