@@ -3,7 +3,7 @@ import ROOT
 import numpy as np
 import array
 import os
-from src.dataloader import *
+from dataloader import *
 from catboost import CatBoostClassifier
 
 def predict(rootfile="",
