@@ -3,21 +3,8 @@
 #include "Structs.h"
 CLAS12Ana::CLAS12Ana(){}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-CLAS12Ana::CLAS12Ana(const std::unique_ptr<clas12::clas12reader>& _c12, TLorentzVector eIn, TLorentzVector pIn){
- 
+CLAS12Ana::CLAS12Ana(const std::unique_ptr<clas12::clas12reader>& _c12){
      hipoBankInterface = HipoBankInterface(_c12);
-      init_electron = eIn;
-     target = pIn;
-     _electron_beam_energy = eIn.E();
-     s = init_electron.M2()+target.M2()+2*target.M()*_electron_beam_energy;
-}
-
-CLAS12Ana::CLAS12Ana(const std::unique_ptr<clas12::clas12reader>& _c12, double beamE){
-     hipoBankInterface = HipoBankInterface(_c12);
-     init_electron.SetPxPyPzE(0,0,sqrt(beamE*beamE-Me*Me),beamE);
-     target.SetPxPyPzE(0,0,0,Mp);
-     _electron_beam_energy = beamE;
-     s = init_electron.M2()+target.M2()+2*target.M()*_electron_beam_energy;
 }
 // ***********************************************************************************************************************
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,6 +37,12 @@ void CLAS12Ana::get_event_info(const std::unique_ptr<clas12::clas12reader>& _c12
         event_info.tSign = get_RGC_TpolSign(event_info.run);
         event_info.target = get_RGC_target(event_info.run);
     }
+
+     init_electron.SetPxPyPzE(0,0,sqrt(beamE*beamE-Me*Me),beamE);
+     target.SetPxPyPzE(0,0,0,Mp);
+     _electron_beam_energy = runBeamEnergy(event_info.run);
+     s = init_electron.M2()+target.M2()+2*target.M()*_electron_beam_energy;
+    
 }
 // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CLAS12Ana::set_beams(TLorentzVector eIn, TLorentzVector pIn){

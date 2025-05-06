@@ -134,10 +134,7 @@ bool CutManager::DC_fiducial_cut(part particle){
 
 // 
 bool CutManager::DC_fiducial_cut_theta_phi(part particle){
-    
-  // Require RGA for this fiducial cut
-  // if(_run_period==RGC){return true;}
-    
+
   const auto minparams = ((_torusBending==-1) ? minparams_in_theta_phi : minparams_out_theta_phi);
   const auto maxparams = ((_torusBending==-1) ? maxparams_in_theta_phi : maxparams_out_theta_phi);
   double theta_DCr = 5000;
@@ -315,9 +312,6 @@ bool CutManager::hadronStatus(part particle){
 // Perform cut on the chi2pid as a function of particle momentum
 bool CutManager::chi2pid(part particle,int isStrict){
   
-  // Require RGA for this fiducial cut
-  // if(_run_period==RGC){return true;}
-    
   bool passChargedPionChi2=false;
   int pid=particle.pid;
   double chi2=particle.chi2;
@@ -443,9 +437,6 @@ bool CutManager::VzCut(part particle){
 // Minimum energy deposited in PCAL cut
 bool CutManager::minEpcal(part particle){
   
-  // Require RGA or RGB for this fiducial cut
-  // if(_run_period==RGC){return true;}
-    
   int pid=particle.pid;
   if(pid==11) return particle.pcal_e>0.07;
   else if(pid==22) return particle.pcal_e>0.00;
@@ -454,9 +445,6 @@ bool CutManager::minEpcal(part particle){
 
 // Fiducial cut on calorimeter edges
 bool CutManager::caloEdges(part particle,int strength){
-    
-  // Require RGA for this fiducial cut
-  // if(_run_period==RGC){return true;}
     
   double min_lu,max_lu,min_lv,max_lv,min_lw,max_lw;
   if(strength==0){
@@ -492,24 +480,17 @@ bool CutManager::caloEdges(part particle,int strength){
 
 bool CutManager::Ele3calo(part particle){
   
-  // Require RGA for this fiducial cut
-  if(_run_period==RGC){return true;}
-    
   if(particle.pcal_e<=0 || particle.ecin_e<=0 || particle.ecout_e<=0) return false;
   return true;
 }
 
 bool CutManager::photonMinEtot(part particle){
-  // Require RGA for this fiducial cut
-  // if(_run_period==RGC){return true;}
     
   if(particle.E<0.2) return false;
   return true;
 }
 
 bool CutManager::photonElectronAngle(part particle_A, part particle_B){
-  // Require RGA for this fiducial cut
-  // if(_run_period==RGC){return true;}
     
   TLorentzVector lv_A, lv_B;
   lv_A.SetPx(particle_A.px);
@@ -531,9 +512,6 @@ bool CutManager::photonElectronAngle(part particle_A, part particle_B){
 }
 
 bool CutManager::photonBetaCut(part particle){
-    
-  // Require RGA for this fiducial cut
-  // if(_run_period==RGC){return true;}
     
   if(particle.beta<0.9||particle.beta>1.1) return false;
   return true;

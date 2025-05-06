@@ -10,8 +10,7 @@ class CLAS12Ana {
 public:
     // Constructor and destructor
     CLAS12Ana();
-       CLAS12Ana(const std::unique_ptr<clas12::clas12reader>&, TLorentzVector, TLorentzVector);
-       CLAS12Ana(const std::unique_ptr<clas12::clas12reader>&, double);
+       CLAS12Ana(const std::unique_ptr<clas12::clas12reader>&);
     
 //     // Member functions
        void set_run_config(const std::unique_ptr<clas12::clas12reader>&);
