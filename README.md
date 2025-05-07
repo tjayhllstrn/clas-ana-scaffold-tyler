@@ -26,6 +26,9 @@ source ~/.clas-ana-scaffold/bin/activate
 
 4. Install python packages for this project
 
+```
+pip install -r requirements.txt
+```
 
 ---
 
