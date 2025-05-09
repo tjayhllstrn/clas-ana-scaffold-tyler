@@ -162,6 +162,10 @@ int pippimBuilder(const char *input_file="out/test/nSidis_005032.root"){
                 truepim.SetPxPyPzE(truepx[k],truepy[k],truepz[k],trueE[k]);
                 dihadron = pip+pim;
                 truedihadron = truepip+truepim;
+
+                Mh = dihadron.M();
+                Mh_true = truedihadron.M();
+                
                 z = kin.z(init_target,dihadron,q);
                 z_true = kin.z(init_target,truedihadron,trueq);
 
