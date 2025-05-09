@@ -13,7 +13,7 @@ options = { max_events: 100 }
 parser = OptionParser.new do |opts|
   opts.banner = "#{GREEN}Usage: run_single_hipo.rb -t TYPE -i FILE -o DIR [options]#{RESET}"
 
-  opts.on("-t TYPE", "--type=TYPE", "SIDIS type (only 'pi0' supported)") do |t|
+  opts.on("-t TYPE", "--type=TYPE", "SIDIS type ('pi0' or 'pippim')") do |t|
     options[:type] = t
   end
 
@@ -50,8 +50,8 @@ rescue OptionParser::ParseError => e
   exit 1
 end
 
-unless options[:type] == 'pi0'
-  STDERR.puts "#{RED}Error: unsupported type '#{options[:type]}'. Only 'pi0' is supported.#{RESET}"
+unless %w[pi0 pippim].include?(options[:type])
+  STDERR.puts "#{RED}Error: unsupported type '#{options[:type]}'. Supported types are 'pi0' and 'pippim'.#{RESET}"
   exit 1
 end
 
@@ -60,7 +60,6 @@ unless File.exist?(options[:input])
   exit 1
 end
 
-# --- ensure output directory exists or offer to create it ---
 unless Dir.exist?(options[:outdir])
   print "#{YELLOW}Output directory '#{options[:outdir]}' does not exist. Create it? [y/N]: #{RESET}"
   ans = STDIN.gets.chomp.downcase
@@ -73,45 +72,45 @@ unless Dir.exist?(options[:outdir])
   end
 end
 
-base  = File.basename(options[:input], File.extname(options[:input]))
-out   = File.join(options[:outdir], "#{base}.root")
-maxev = options[:max_events]
+base   = File.basename(options[:input], File.extname(options[:input]))
+out    = File.join(options[:outdir], "#{base}.root")
+maxev  = options[:max_events]
+type   = options[:type]
 
-# 1) Convert HIPO → ROOT
-hipo_cmd = %Q[clas12root -l -b -q "macros/hipo2tree_pi0.C(\\"#{options[:input]}\\",\\"#{out}\\",#{maxev})"]
+# 1) Convert HIPO -> ROOT
+macro = (type == 'pi0' ? 'hipo2tree_pi0' : 'hipo2tree_pippim')
+hipo_cmd = %Q[clas12root -l -b -q 'macros/#{macro}.C("#{options[:input]}","#{out}",#{maxev})']
 puts "#{GREEN}Running conversion:#{RESET} #{hipo_cmd}"
 unless system(hipo_cmd)
-  STDERR.puts "#{RED}Error: Failed to run hipo2tree_pi0.C#{RESET}"
+  STDERR.puts "#{RED}Error: Conversion with #{macro}.C failed#{RESET}"
   exit 1
 end
 
-# 2) Pick GBT model based on "inbending"/"outbending" in path
-lc = options[:input].downcase
-if lc.include?('outbending')
-  model_type = 'outbending'
-elsif lc.include?('inbending')
-  model_type = 'inbending'
-else
-  model_type = 'inbending'
-  puts "#{YELLOW}Warning: input path does not contain 'inbending' or 'outbending'; defaulting to 'inbending'.#{RESET}"
+# 2) For pi0 only: pick GBT model and run prediction
+if type == 'pi0'
+  lc = options[:input].downcase
+  model_type = lc.include?('outbending') ? 'outbending' : 'inbending'
+  unless %w[inbending outbending].include?(model_type)
+    model_type = 'inbending'
+    puts "#{YELLOW}Warning: defaulting to 'inbending' model#{RESET}"
+  end
+
+  model_name = "model_rga_pass1_#{model_type}"
+  model_path = File.join('src/gbt/models', model_name)
+  gbt_cmd = %Q[python3 src/gbt/predict.py "#{out}" "#{model_path}" "EventTree"]
+  puts "#{GREEN}Running GBT prediction with model: #{model_name}#{RESET}"
+  unless system(gbt_cmd)
+    STDERR.puts "#{RED}Error: GBT prediction failed#{RESET}"
+    exit 1
+  end
 end
 
-model_name = "model_rga_pass1_#{model_type}"
-model_path = File.join('src/gbt/models', model_name)
-
-# 3) Run GBT prediction
-gbt_cmd = %Q[python3 src/gbt/predict.py "#{out}" "#{model_path}" "EventTree"]
-puts "#{GREEN}Running GBT prediction with model: #{model_name}#{RESET}"
-unless system(gbt_cmd)
-  STDERR.puts "#{RED}Error: GBT prediction failed#{RESET}"
-  exit 1
-end
-
-# 4) Run pi0Builder on the same ROOT file
-pi0_cmd = %Q[clas12root -l -b -q "macros/pi0Builder.C(\\"#{out}\\")"]
-puts "#{GREEN}Running pi0Builder on:#{RESET} #{out}"
-unless system(pi0_cmd)
-  STDERR.puts "#{RED}Error: pi0Builder failed#{RESET}"
+# 3) Run builder macro
+builder = (type == 'pi0' ? 'pi0Builder' : 'pippimBuilder')
+builder_cmd = %Q[clas12root -l -b -q 'macros/#{builder}.C("#{out}")']
+puts "#{GREEN}Running #{builder} on:#{RESET} #{out}"
+unless system(builder_cmd)
+  STDERR.puts "#{RED}Error: #{builder} failed#{RESET}"
   exit 1
 end
 
