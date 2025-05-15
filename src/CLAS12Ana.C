@@ -9,39 +9,48 @@ CLAS12Ana::CLAS12Ana(const std::unique_ptr<clas12::clas12reader>& _c12){
 // ***********************************************************************************************************************
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CLAS12Ana::set_run_config(const std::unique_ptr<clas12::clas12reader>& _c12){
-    _idx_RUNconfig = _c12->addBank("RUN::config");
-    _irun = _c12->getBankOrder(_idx_RUNconfig,"run");
-    _ievnum = _c12->getBankOrder(_idx_RUNconfig,"event");
-    _itorus = _c12->getBankOrder(_idx_RUNconfig,"torus");
+    _idx_RUNconfig = _c12->addBank("RUN::config"); //finds the index of the RUN::config bank in the hipo file
+    _irun = _c12->getBankOrder(_idx_RUNconfig,"run"); //finds the index of the run number in that config bank
+    _ievnum = _c12->getBankOrder(_idx_RUNconfig,"event"); //finds index of event number in the bank
+    _itorus = _c12->getBankOrder(_idx_RUNconfig,"torus"); //finds index of torus in/outbending in the bank
 }
 // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//fills event_info with relevant properties of that event
 void CLAS12Ana::get_event_info(const std::unique_ptr<clas12::clas12reader>& _c12, EVENT_INFO &event_info){
     
-    auto event = _c12->event(); // to get helicity
+    auto event = _c12->event(); // gets the 
     
-    int prev_run = event_info.run;
-    event_info.run = _c12->getBank(_idx_RUNconfig)->getInt(_irun,0);
-    event_info.torus = _c12->getBank(_idx_RUNconfig)->getFloat(_itorus,0);
-    if(event_info.run==11){
-        event_info.run *= event_info.torus;
+    int prev_run = event_info.run; //set a dummy variable for previous run number before changing
+    event_info.run = _c12->getBank(_idx_RUNconfig)->getInt(_irun,0); //run number  
+    event_info.torus = _c12->getBank(_idx_RUNconfig)->getFloat(_itorus,0); //torus info 
+    
+    //MC runs correspond to the rungroup, for example RGA_inbending is -11, RGA_outbending is 11. RGB inbending is -22 RGB outbending is 22
+    if(event_info.run==11){ 
+        event_info.run *= event_info.torus; //makes the run name in event_info negative or positive based on the torus polarity
     }
-    event_info.evnum = _c12->getBank(_idx_RUNconfig)->getInt(_ievnum,0);
-    event_info.hel   = event->getHelicity();
+    
+    event_info.evnum = _c12->getBank(_idx_RUNconfig)->getInt(_ievnum,0);//gets the event number 
+    event_info.hel   = event->getHelicity(); //gets the helicity
+     
+    //flips the helicity if within specific ranges defined in constants.h why???????????????????
     if(runHelicityFlip(event_info.run))
         event_info.hel*=-1;
-    
+
+    //determines the event polarization based on certain conditions in constants.h why???????????????????????
     event_info.Pol = runPolarization(event_info.run);
+
+    //if this is an RGC run there are special things you must do
     if (event_info.run >= 16082 && event_info.run <= 17738 && event_info.run!=prev_run){ // RGC, fill this info whenever a new run appears
         event_info.tPol = get_RGC_Tpol(event_info.run);
         event_info.hwp = get_RGC_HWP(event_info.run);
         event_info.tSign = get_RGC_TpolSign(event_info.run);
         event_info.target = get_RGC_target(event_info.run);
     }
-
+    //calculate s
      _electron_beam_energy = runBeamEnergy(event_info.run);
      init_electron.SetPxPyPzE(0,0,sqrt(_electron_beam_energy*_electron_beam_energy-Me*Me),_electron_beam_energy);
      target.SetPxPyPzE(0,0,0,Mp);
-     s = init_electron.M2()+target.M2()+2*target.M()*_electron_beam_energy;
+     s = init_electron.M2()+target.M2()+2*target.M()*_electron_beam_energy; //but not saved anywhere????????????????????
     
 }
 // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,14 +78,14 @@ std::vector<part> CLAS12Ana::load_reco_particles(const std::unique_ptr<clas12::c
 
       partstruct.chi2 = particle->getChi2Pid();
       partstruct.theta = particle->getTheta();
-      partstruct.eta = _kin.eta(partstruct.theta);
+      partstruct.eta = _kin.eta(partstruct.theta); //pseudorapidity calculation
       partstruct.phi = particle->getPhi();
       partstruct.p = particle->getP();
       partstruct.px = _kin.Px(partstruct.p,partstruct.theta,partstruct.phi);
       partstruct.py = _kin.Py(partstruct.p,partstruct.theta,partstruct.phi);
       partstruct.pz = _kin.Pz(partstruct.p,partstruct.theta,partstruct.phi);
-      partstruct.pt = _kin.Pt(partstruct.px,partstruct.py);
-      if(partstruct.pid!=22)
+      partstruct.pt = _kin.Pt(partstruct.px,partstruct.py); //transverse momentum
+      if(partstruct.pid!=22) //if the particle is not a photon, then get the mass
         partstruct.m = particle->getPdgMass();
       else
         partstruct.m = 0;
@@ -88,7 +97,7 @@ std::vector<part> CLAS12Ana::load_reco_particles(const std::unique_ptr<clas12::c
       partstruct.status = particle->getStatus();
       partstruct.E = _kin.E(partstruct.m,partstruct.p);
     
-      // Ensure hadrons are not in CD
+      // Ensure hadrons are not in CD - why??????????????????????????????
       if (partstruct.pid == 2212 || partstruct.pid == -2212 ||
         partstruct.pid == 2112 ||
         partstruct.pid == -321 || partstruct.pid == -211 ||

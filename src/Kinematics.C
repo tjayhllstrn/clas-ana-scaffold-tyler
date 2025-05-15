@@ -2,11 +2,11 @@
 #include "Constants.h"
 using namespace std;
 
-double Kinematics::Q2(double E1, double E2, double cth){
+double Kinematics::Q2(double E1, double E2, double cth){//from Q2=2E1E2(1-cos(theta))
   return 2.0 * E1 * E2 * (1.0 - cth);
 }
 
-double Kinematics::x(double Q2, double s, double y){
+double Kinematics::x(double Q2, double s, double y){//from Q2=(s-mp^2)xy
   return Q2/(s-0.938272*0.938272)/y;
 }
 
@@ -56,20 +56,20 @@ double Kinematics::E(double M, double P){
   return pow(M*M+P*P,0.5);
 }
 
-double Kinematics::cth(double Px, double Py, double Pz){
+double Kinematics::cth(double Px, double Py, double Pz){//calculates cos(theta)=pz/ptotal
   double Pt = Kinematics::Pt(Px,Py);
   return Pz / (pow(Pz*Pz+Pt*Pt,0.5));
 }
 
-double Kinematics::y(double E1, double E2){
-  return (E1-E2)/E1;
+double Kinematics::y(double E1, double E3){
+  return (E1-E3)/E1;
 }
 
-double Kinematics::nu(double E1, double E2){
-  return E1-E2;
+double Kinematics::nu(double E1, double E3){
+  return E1-E3;
 }
 
-double Kinematics::W(double Q2, double mT, double nu){
+double Kinematics::W(double Q2, double mT, double nu){//from W=(p2+q)
   return sqrt(-Q2 + pow(mT,2) + 2 * mT * nu);
 } 
 
