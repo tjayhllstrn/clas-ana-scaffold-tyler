@@ -2,14 +2,16 @@
 #include "../src/Kinematics.C"
 #include "../src/TreeManager.C"
 
+//clas12root -l -b -q 'macros/pippi0Builder.C("out/test_pippi0/nSidis_005032.root")'
 
-int pippimBuilder(const char *input_file="out/test_pippi0/nSidis_005032.root"){
+int pippi0Builder(const char *input_file="out/test_pippi0/nSidis_005032.root"){
     
     // Read the TFile
     TFile *f = new TFile(input_file,"UPDATE");
     // Read the TTree
     TTree *EventTree = (TTree*)f->Get("EventTree");
-    
+
+    //initialize variables
     double x, Q2, W, Pol,y,nu;
     double truex, trueQ2, trueW;
     double tPol;
@@ -21,6 +23,7 @@ int pippimBuilder(const char *input_file="out/test_pippi0/nSidis_005032.root"){
     int trueparentid[Nmax],trueparentpid[Nmax],trueparentparentid[Nmax],trueparentparentpid[Nmax];
     int sector[Nmax];
     int pid[Nmax], truepid[Nmax];
+    
     //link the TBranches to the variables
     EventTree->SetBranchAddress("A",&A);
     EventTree->SetBranchAddress("evnum",&_evnum);
@@ -64,8 +67,10 @@ int pippimBuilder(const char *input_file="out/test_pippi0/nSidis_005032.root"){
     EventTree->SetBranchAddress("trueparentparentid", &trueparentparentid);
     EventTree->SetBranchAddress("trueparentparentpid", &trueparentparentpid);
     TString treename = "";
-    if (f->Get("pippim")) f->Delete("pippim*;*");
-    treename = "pippim";
+    //make sure there is no object called pippi0 before making one
+    if (f->Get("pippi0")) f->Delete("pippi0*;*");
+    treename = "pippi0";
+    //make a tree with the name pippi0
     TTree *outtree = new TTree(treename.Data(),"Tree");
     double z, pT, phih, Mx, xF, xF1, xF2, Mh,eps,gamma;
     double z_true, pT_true, phih_true, Mx_true, xF_true, xF1_true, xF2_true, Mh_true;
@@ -104,14 +109,18 @@ int pippimBuilder(const char *input_file="out/test_pippi0/nSidis_005032.root"){
     double mE = 0.000511;
     TLorentzVector init_electron(0,0,sqrt(eBeam*eBeam-mE*mE),eBeam);
     TLorentzVector init_target(0,0,0,0.938272);
-    
-    TLorentzVector pip, pim, dihadron;
-    TLorentzVector truepip, truepim, truedihadron;
+
+
+    //Calculate all other variables of interest - Mdiphoton, Mh,Mx, z,x,Q2,y,W,x_F,-t
+    TLorentzVector pip, diphoton, dihadron, pho1, pho2;
+    TLorentzVector truepip, truediphoton, truedihadron, truepho1, truepho2;
     // for loop over all events
     int N = EventTree->GetEntries();
     Kinematics kin;
-
+    
+    //looping through events
     for (int ev = 0; ev < N; ++ev) {
+        //progress bar
         int step = (N >= 100 ? N/100 : 1);
         if (ev % step == 0) {
           int progress = (100 * ev) / N;
@@ -120,11 +129,12 @@ int pippimBuilder(const char *input_file="out/test_pippi0/nSidis_005032.root"){
         
         EventTree->GetEntry(ev);
 
+        //figure out if the even is MC or not
         if(abs(run)==11){
             isMC=1;
         }
         
-        //Loop over all particles in the event to find electron
+        //Loop over all particles in the event to find the scattered electron (the electron with the highest energy)
         TLorentzVector electron;
         TLorentzVector trueelectron;
         TLorentzVector q; // virtual photon
@@ -153,48 +163,58 @@ int pippimBuilder(const char *input_file="out/test_pippi0/nSidis_005032.root"){
         q = init_electron-electron;
         trueq = init_electron-trueelectron;
 
+        
         for(int j = 0; j<Nmax;j++){
-            if(pid[j]!=211)continue;
-            pip.SetPxPyPzE(px[j],py[j],pz[j],E[j]);
-            truepip.SetPxPyPzE(truepx[j],truepy[j],truepz[j],trueE[j]);
+            if(pid[j]!=22)continue;
+            pho1.SetPxPyPzE(px[j],py[j],pz[j],E[j]);
+            truepho1.SetPxPyPzE(truepx[j],truepy[j],truepz[j],trueE[j]);
             for(int k = 0; k<Nmax;k++){
-                if(pid[k]!=-211)continue;
-                pim.SetPxPyPzE(px[k],py[k],pz[k],E[k]);
-                truepim.SetPxPyPzE(truepx[k],truepy[k],truepz[k],trueE[k]);
-                dihadron = pip+pim;
-                truedihadron = truepip+truepim;
+                if(pid[k]!=22 && k!=j)continue;
+                pho2.SetPxPyPzE(px[k],py[k],pz[k],E[k]);
+                truepho2.SetPxPyPzE(truepx[k],truepy[k],truepz[k],trueE[k]);
+                diphoton = pho1+pho2;
+                truediphoton = truepho1+truepho2;
+                    for(int l = 0; l<Nmax;l++){
+                        if(pid[l]!=211)continue;
+                        pip.SetPxPyPzE(px[l],py[l],pz[l],E[l]);
+                        truepip.SetPxPyPzE(truepx[l],truepy[l],truepz[l],trueE[l]);
+                        dihadron = pip+diphoton;
+                        truedihadron = truepip+truediphoton;
+                            
+                        Mh = dihadron.M();
+                        Mh_true = truedihadron.M();
+                        
+                        z = kin.z(init_target,dihadron,q);
+                        z_true = kin.z(init_target,truedihadron,trueq);
+        
+                        pT = kin.Pt(q,dihadron,init_target);
+                        pT_true = kin.Pt(trueq,truedihadron,init_target);
+        
+                        phih = kin.phi_h(q,init_electron,dihadron);
+                        phih_true = kin.phi_h(trueq,init_electron,truedihadron);
+        
+                        Mx = (init_electron+init_target-electron-dihadron).M();
+                        Mx_true = (init_electron+init_target-trueelectron-truedihadron).M();
+        
+                        xF = kin.xF(q,dihadron,init_target,W);
+                        xF_true = kin.xF(trueq,truedihadron,init_target,trueW);
+        
+                        xF1 = kin.xF(q,pip,init_target,W);
+                        xF1_true = kin.xF(trueq,truepip,init_target,trueW);
+                        
+                        xF2 = kin.xF(q,diphoton,init_target,W);
+                        xF2_true = kin.xF(trueq,truediphoton,init_target,trueW);
+                        
+                        eps=(1-y-pow(y*gamma,2)/4)/(1-y+pow(y,2)/2+pow(y*gamma,2)/4);
+                        gamma = 2*0.938272*x/sqrt(Q2);
+        
+                        if(!(electron.E()>0&&pip.P()>1.25&&diphoton.P()>1.25&&xF1>0&&xF2>0)){
+                            continue;
+                        }
+                        outtree->Fill();
+                    }
 
-                Mh = dihadron.M();
-                Mh_true = truedihadron.M();
-                
-                z = kin.z(init_target,dihadron,q);
-                z_true = kin.z(init_target,truedihadron,trueq);
-
-                pT = kin.Pt(q,dihadron,init_target);
-                pT_true = kin.Pt(trueq,truedihadron,init_target);
-
-                phih = kin.phi_h(q,init_electron,dihadron);
-                phih_true = kin.phi_h(trueq,init_electron,truedihadron);
-
-                Mx = (init_electron+init_target-electron-dihadron).M();
-                Mx_true = (init_electron+init_target-trueelectron-truedihadron).M();
-
-                xF = kin.xF(q,dihadron,init_target,W);
-                xF_true = kin.xF(trueq,truedihadron,init_target,trueW);
-
-                xF1 = kin.xF(q,pip,init_target,W);
-                xF1_true = kin.xF(trueq,truedihadron,init_target,trueW);
-                
-                xF2 = kin.xF(q,pim,init_target,W);
-                xF2_true = kin.xF(trueq,truedihadron,init_target,trueW);
-                
-                eps=(1-y-pow(y*gamma,2)/4)/(1-y+pow(y,2)/2+pow(y*gamma,2)/4);
-                gamma = 2*0.938272*x/sqrt(Q2);
-
-                if(!(electron.E()>0&&pip.P()>1.25&&pim.P()>1.25&&xF1>0&&xF2>0)){
-                    continue;
-                }
-                outtree->Fill();
+                    
             }
         }
     }
