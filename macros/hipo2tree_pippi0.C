@@ -105,7 +105,7 @@ int hipo2tree_pippi0(const char* hipoFile = "",
         _cm.set_run(event_info.run); //sets relevant runinfo for the cutmanager class to use
 
         // QA cuts
-        if(qa->Pass(event_info.run,event_info.evnum)) {
+        if(!qa->Pass(event_info.run,event_info.evnum)) {
           badAsym++;
           continue;
         }
